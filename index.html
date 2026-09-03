@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบคำนวณค่าล่วงเวลา (OT Calculator)</title>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Prompt', sans-serif;
+            background-color: #fcf6f5;
+            color: #4a4a4a;
+            margin: 0;
+            padding: 30px 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 35px;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(214, 166, 166, 0.15);
+            border: 1px solid #f2e3e3;
+        }
+        h2 {
+            text-align: center;
+            color: #8c5656;
+            margin-bottom: 25px;
+            font-weight: 600;
+        }
+        .form-group {
+            margin-bottom: 22px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #6b4f4f;
+            font-size: 14px;
+        }
+        input, select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #e3cccb;
+            border-radius: 8px;
+            font-size: 15px;
+            font-family: 'Prompt', sans-serif;
+            box-sizing: border-box;
+            background-color: #fff9f9;
+            color: #4a4a4a;
+            transition: all 0.3s ease;
+        }
+        input:focus, select:focus {
+            outline: none;
+            border-color: #b08989;
+            background-color: #fff;
+            box-shadow: 0 0 0 3px rgba(176, 137, 137, 0.15);
+        }
+        .btn-container {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        button {
+            flex: 2;
+            padding: 14px;
+            background: linear-gradient(135deg, #d4a5a5 0%, #b08989 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-family: 'Prompt', sans-serif;
+            cursor: pointer;
+            font-weight: 600;
+            box-shadow: 0 4px 15px rgba(176, 137, 137, 0.3);
+            transition: opacity 0.3s, transform 0.1s;
+        }
+        .btn-reset {
+            flex: 1;
+            background: linear-gradient(135deg, #e0dede 0%, #c5c2c2 100%);
+            box-shadow: 0 4px 15px rgba(197, 194, 194, 0.3);
+            color: #555;
+        }
+        button:hover {
+            opacity: 0.9;
+        }
+        button:active {
+            transform: scale(0.98);
+        }
+        .result-box {
+            margin-top: 35px;
+            padding: 25px;
+            background: #fff5f5;
+            border-radius: 12px;
+            border-left: 6px solid #b08989;
+            border-top: 1px solid #f2e3e3;
+            border-right: 1px solid #f2e3e3;
+            border-bottom: 1px solid #f2e3e3;
+        }
+        .result-box h3 {
+            margin-top: 0;
+            color: #8c5656;
+            font-size: 18px;
+            border-bottom: 1px solid #eec5c5;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+        .result-item {
+            margin-bottom: 12px;
+            font-size: 14px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .result-item span.label-side {
+            color: #7a6262;
+        }
+        .result-item span.value-side {
+            font-weight: 500;
+            color: #4a4a4a;
+            text-align: right;
+            max-width: 65%;
+        }
+        .highlight {
+            font-weight: 600;
+            color: #b94040 !important;
+        }
+        .total-pay {
+            font-size: 18px;
+            margin-top: 15px;
+            padding-top: 12px;
+            border-top: 1px dashed #eec5c5;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>📊 ระบบคำนวณค่าล่วงเวลา (OT)</h2>
+    
+    <div class="form-group">
+        <label for="salary">💰 เงินเดือนปัจจุบัน (บาท):</label>
+        <input type="text" inputmode="decimal" id="salary" placeholder="กรอกตัวเลขเงินเดือน" onfocus="clearFormat(this)" oninput="formatSalaryInput(this)" onblur="applyFormat(this); saveToStorage();">
+    </div>
+
+    <div class="form-group">
+        <label for="workStartTime">⏰ เวลางานปกติ (เริ่มต้น):</label>
+        <select id="workStartTime" onchange="saveToStorage()">
+            <option value="" disabled selected>-- กรุณาเลือกเวลางานปกติ --</option>
+            <option value="07:30">07:30 น. (เลิก 16:30 | OT เริ่ม 17:00 วันธรรมดา)</option>
+            <option value="08:30">08:30 น. (เลิก 17:30 | OT เริ่ม 18:00 วันธรรมดา)</option>
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label for="otStart">📅 เวลาตอกบัตรเข้า (เริ่มต้นทำ OT):</label>
+        <input type="datetime-local" id="otStart" onchange="saveToStorage()">
+    </div>
+
+    <div class="form-group">
+        <label for="otEnd">📅 เวลาตอกบัตรออก (สิ้นสุดทำ OT):</label>
+        <input type="datetime-local" id="otEnd" onchange="saveToStorage()">
+    </div>
+
+    <div class="btn-container">
+        <button class="btn-reset" onclick="resetData()">🔄 ล้างค่า</button>
+        <button onclick="calculateOT()">✨ คำนวณค่าโอที ✨</button>
+    </div>
+
+    <div class="result-box" id="resultContainer" style="display:none;">
+        <h3>📌 สรุปผลการคำนวณ</h3>
+        <div class="result-item">
+            <span class="label-side">💵 ค่าแรงต่อชั่วโมง:</span>
+            <span class="value-side" id="resRate"></span>
+        </div>
+        <div class="result-item">
+            <span class="label-side">✂️ ช่วงเวลา (หลังตัดเศษ):</span>
+            <span class="value-side" id="resCalculatedRange"></span>
+        </div>
+        <div class="result-item" id="breakdown-1_5" style="display:none;">
+            <span class="label-side">🔸 วันธรรมดา (1.5 เท่า):</span>
+            <span class="value-side" id="val-1_5"></span>
+        </div>
+        <div class="result-item" id="breakdown-1" style="display:none;">
+            <span class="label-side">🔹 วันหยุด ในเวลา (1 เท่า):</span>
+            <span class="value-side" id="val-1"></span>
+        </div>
+        <div class="result-item" id="breakdown-3" style="display:none;">
+            <span class="label-side">🔹 วันหยุด นอกเวลา (3 เท่า):</span>
+            <span class="value-side" id="val-3"></span>
+        </div>
+        <div class="result-item total-pay">
+            <span class="label-side" style="font-weight: 600; color: #8c5656;">🎉 รวมเงินค่าโอทีสุทธิ:</span>
+            <span class="value-side highlight" id="resTotal" style="font-size: 20px;"></span>
+        </div>
+    </div>
+</div>
+
+<script>
+window.onload = function() {
+    loadFromStorage();
+};
+
+function saveToStorage() {
+    const data = {
+        salary: document.getElementById('salary').value,
+        workStartTime: document.getElementById('workStartTime').value,
+        otStart: document.getElementById('otStart').value,
+        otEnd: document.getElementById('otEnd').value
+    };
+    localStorage.setItem('ot_calculator_v2', JSON.stringify(data));
+}
+
+function loadFromStorage() {
+    const saved = localStorage.getItem('ot_calculator_v2');
+    if (saved) {
+        const data = JSON.parse(saved);
+        document.getElementById('salary').value = data.salary || "";
+        document.getElementById('workStartTime').value = data.workStartTime || "";
+        document.getElementById('otStart').value = data.otStart || "";
+        document.getElementById('otEnd').value = data.otEnd || "";
+    }
+}
+
+function resetData() {
+    localStorage.removeItem('ot_calculator_v2');
+    document.getElementById('salary').value = "";
+    document.getElementById('workStartTime').value = "";
+    document.getElementById('otStart').value = "";
+    document.getElementById('otEnd').value = "";
+    document.getElementById('resultContainer').style.display = 'none';
+}
+
+function clearFormat(input) {
+    let val = input.value.replace(/,/g, '');
+    input.value = val === "0.00" ? "" : val;
+}
+
+function formatSalaryInput(input) {
+    let value = input.value.replace(/[^0-9.]/g, '');
+    let parts = value.split('.');
+    if (parts.length > 2) value = parts[0] + '.' + parts.slice(1).join('');
+    input.value = value;
+}
+
+function applyFormat(input) {
+    let cleanVal = input.value.replace(/,/g, '');
+    let num = parseFloat(cleanVal);
+    if (!isNaN(num)) {
+        input.value = num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    } else {
+        input.value = "";
+    }
+}
+
+// ปัดเวลาขึ้นให้เต็ม 30 นาที
+function roundUp30(dateObj) {
+    let d = new Date(dateObj);
+    let mins = d.getMinutes();
+    if (mins > 0 && mins <= 30) {
+        d.setMinutes(30, 0, 0);
+    } else if (mins > 30) {
+        d.setHours(d.getHours() + 1);
+        d.setMinutes(0, 0, 0);
+    } else {
+        d.setSeconds(0, 0);
+    }
+    return d;
+}
+
+// ตัดเศษเวลาลงให้เหลือรอบ 30 นาที
+function roundDown30(dateObj) {
+    let d = new Date(dateObj);
+    let mins = d.getMinutes();
+    if (mins >= 30) {
+        d.setMinutes(30, 0, 0);
+    } else {
+        d.setMinutes(0, 0, 0);
+    }
+    return d;
+}
+
+// ฟอร์แมตวันที่แสดงผลแบบไทย
+const daysTH = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์'];
+function formatDT(d) {
+    return `${daysTH[d.getDay()]} ${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth()+1).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')} น.`;
+}
+
+function calculateOT() {
+    const salaryVal = document.getElementById('salary').value.replace(/,/g, '');
+    const workStartStr = document.getElementById('workStartTime').value;
+    const otStartStr = document.getElementById('otStart').value;
+    const otEndStr = document.getElementById('otEnd').value;
+
+    if (!salaryVal || !workStartStr || !otStartStr || !otEndStr) {
+        alert("กรุณากรอกข้อมูลให้ครบทุกช่องก่อนคำนวณครับ");
+        return;
+    }
+
+    const rawStart = new Date(otStartStr);
+    const rawEnd = new Date(otEndStr);
+
+    if (rawStart >= rawEnd) {
+        alert("เวลาออกงาน ต้องมากกว่าเวลาเข้างานครับ");
+        return;
+    }
+
+    saveToStorage();
+
+    const salary = parseFloat(salaryVal) || 0;
+    const hourlyRate = salary / 30 / 8;
+    const workStartParts = workStartStr.split(':');
+    const normalHour = parseInt(workStartParts[0]);
+    const normalMin = parseInt(workStartParts[1]);
+
+    let adjustedStart = roundUp30(rawStart);
+    let adjustedEnd = roundDown30(rawEnd);
+
+    if (adjustedStart >= adjustedEnd) {
+        alert("เวลาโอทีสุทธิหลังตัดเศษไม่ถึง 30 นาที จึงไม่มีค่าล่วงเวลาครับ");
+        return;
+    }
+
+    let ot1_5RateHours = 0; // วันธรรมดา
+    let ot1RateHours = 0;   // วันหยุด ในเวลา
+    let ot3RateHours = 0;   // วันหยุด นอกเวลา
+
+    let currentChunk = new Date(adjustedStart);
+    
+    // ลูปคำนวณทีละ 30 นาที
+    while (currentChunk < adjustedEnd) {
+        let nextChunk = new Date(currentChunk.getTime() + 30 * 60000); // +30 นาที
+        
+        let dayOfWeek = currentChunk.getDay();
+        let isWeekend = (dayOfWeek === 0 || dayOfWeek === 6);
+
+        // คำนวณเวลางานปกติของวันนั้นๆ (อิงตามวันที่ของ currentChunk)
+        let normalStart = new Date(currentChunk);
+        normalStart.setHours(normalHour, normalMin, 0, 0);
+        let normalEnd = new Date(normalStart.getTime() + 9 * 60 * 60 * 1000); // เลิกงาน (รวมพัก 1 ชม)
+
+        if (!isWeekend) {
+            // วันธรรมดา: ได้ OT หลังเวลาเลิกงานไปแล้ว 30 นาที
+            let eligibleStart = new Date(normalEnd.getTime() + 30 * 60000);
+            if (currentChunk >= eligibleStart) {
+                ot1_5RateHours += 0.5;
+            }
+        } else {
+            // วันหยุด: เช็คว่าอยู่ในเวลางานปกติ หรือ นอกเวลางาน
+            if (currentChunk >= normalStart && nextChunk <= normalEnd) {
+                ot1RateHours += 0.5;
+            } else {
+                ot3RateHours += 0.5;
+            }
+        }
+        
+        // ขยับเวลาไปทีละ 30 นาที
+        currentChunk = nextChunk;
+    }
+
+    // คำนวณเป็นเงิน
+    let pay1_5 = ot1_5RateHours * hourlyRate * 1.5;
+    let pay1 = ot1RateHours * hourlyRate * 1.0;
+    let pay3 = ot3RateHours * hourlyRate * 3.0;
+    let totalPay = pay1_5 + pay1 + pay3;
+
+    // แสดงผลบนหน้าจอ
+    document.getElementById('resultContainer').style.display = 'block';
+    document.getElementById('resRate').innerHTML = `<span class="highlight">${hourlyRate.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span> บาท/ชม.`;
+    document.getElementById('resCalculatedRange').innerHTML = `<span class="highlight">${formatDT(adjustedStart)}<br>ถึง ${formatDT(adjustedEnd)}</span>`;
+    
+    const bd1_5 = document.getElementById('breakdown-1_5');
+    const bd1 = document.getElementById('breakdown-1');
+    const bd3 = document.getElementById('breakdown-3');
+
+    // ซ่อน-แสดงรายละเอียดอัตราที่เข้าเงื่อนไข
+    if (ot1_5RateHours > 0) {
+        bd1_5.style.display = 'flex';
+        document.getElementById('val-1_5').innerText = `${ot1_5RateHours} ชม. (${pay1_5.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} บ.)`;
+    } else { bd1_5.style.display = 'none'; }
+
+    if (ot1RateHours > 0) {
+        bd1.style.display = 'flex';
+        document.getElementById('val-1').innerText = `${ot1RateHours} ชม. (${pay1.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} บ.)`;
+    } else { bd1.style.display = 'none'; }
+
+    if (ot3RateHours > 0) {
+        bd3.style.display = 'flex';
+        document.getElementById('val-3').innerText = `${ot3RateHours} ชม. (${pay3.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} บ.)`;
+    } else { bd3.style.display = 'none'; }
+
+    document.getElementById('resTotal').innerHTML = `${totalPay.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} บาท`;
+}
+</script>
+
+</body>
+</html>
